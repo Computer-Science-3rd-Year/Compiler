@@ -1,4 +1,5 @@
 from Grammar import *
+import copy
 from HulkGrammar import *
 # Computes First(alpha), given First(Vt) and First(Vn) 
 # alpha in (Vt U Vn)*
@@ -78,7 +79,7 @@ def compute_firsts(G):
     # First(Vt) + First(Vt) + First(RightSides)
     return firsts
 
-firsts = compute_firsts(G)
+#firsts = compute_firsts(G)
 
 
 def compute_follows(G, firsts):
@@ -127,11 +128,11 @@ def compute_follows(G, firsts):
     # Follow(Vn)
     return follows
 
-follows = compute_follows(G, firsts)
+#follows = compute_follows(G, firsts)
 
-def lr0_closure(item):
+def lr0_closure(G,item):
     closure = {item}
-
+    
     x = True
     while x:
 
@@ -150,7 +151,7 @@ def lr0_closure(item):
         x = len(closure) != len_c
     return closure
 
-def lr0_goto(closure, symbol):
+def lr0_goto(G,closure, symbol):
     newclosure = set()
 
     for production, pos in closure:
@@ -159,22 +160,22 @@ def lr0_goto(closure, symbol):
             continue
 
         if right[pos - 1] == symbol:
-            newclosure.update(lr0_closure((production, pos + 1)))
+            newclosure.update(lr0_closure(G,(production, pos + 1)))
     
     return newclosure
 
-def slr_parser_table():
-    canonical = [0, lr0_closure((0,1))]
-
+def slr_parser_table(G):
+    canonical = [0, lr0_closure(G,(0,1))]
     action = {}
     goto = {}
-
+    firsts = compute_firsts(G)
+    follows = compute_follows(G, firsts)
     c = 1
     while c < len(canonical):
 
         for d in G.terminals:
-            closure = lr0_goto(canonical[c], d)
-            #print(closure, d)
+
+            closure = lr0_goto(G,canonical[c], d)
             if len(closure):
                 try:
                     k = canonical.index(closure)
@@ -188,7 +189,7 @@ def slr_parser_table():
                     action[(c,d)] = [k]
 
         for d in G.nonTerminals:
-            closure = lr0_goto(canonical[c], d)
+            closure = lr0_goto(G,canonical[c], d)
 
             if len(closure):
                 try:
@@ -219,14 +220,14 @@ def slr_parser_table():
                                 action[(c,a)].append(-k)
                             else:
                                 action[(c,a)] = [-k]
-                        else:
-                            action[(c,a)] = [-k]
+                        else:                            action[(c,a)] = [-k]
         c += 1
 
     return goto, action
 
-def slr_parser():
-    goto, action = slr_parser_table()
+def slr_parser(G, funcion):
+
+    goto, action = slr_parser_table(G)
     #for item in action:
     #    print(item, action[item])
     def parser(tokens):
@@ -237,7 +238,7 @@ def slr_parser():
         while True:
             try:
                 #print(s[-1], tokens[c])
-                k = action[(s[-1], tokens[c])][0]
+                k = action[(s[-1], funcion(tokens[c]))][0]
             except:
                 raise SyntaxError('No esta bien el codigo pasado')
             
@@ -254,19 +255,22 @@ def slr_parser():
 
                 s_len = len(s) - len(right)
                 s[s_len:] = []
-
-                args = r[s_len - 1:]
+               # print(r)
+               # for i in r:
+                #    if type(i) != Terminal and type(i) != int:
+                #        print(i.transitions)
+                args = copy.deepcopy(r[s_len - 1:])
                 r[s_len - 1:] = []
                 args.insert(0,0)
                 r.append(reduce(args))
-                print(G.Productions[-k])
                 T.append(G.Productions[-k])
+                #print(G.Productions[-k])
                 s.append(goto[(s[-1], left)][0])
     return parser
 def negativos(array):
     return any(elemento < 0 for elemento in array)
-parse = slr_parser()
+#parse = slr_parser(G, lambda x: x.type_)
 #derivation = parse([type_, Id, llave_a, Id, asignar, num, punto_c, llave_c, let, Id, asignar, num, in_, num,plus, num, punto_c, G.EOF])
-derivation = parse([type_, Id, opar, Id, cpar, llave_a, Id, asignar, num, punto_c, llave_c, num,punto_c, G.EOF])
+#derivation = parse([type_, Id, opar, Id, cpar, llave_a, Id, asignar, num, punto_c, llave_c, num,punto_c, G.EOF])
 #print(derivation)
 

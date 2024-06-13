@@ -111,15 +111,15 @@ class NodeAcces(Node):
 
 class NodeNum(Node):
     def __init__(self, num):
-        self.value = num
+        self.value = num.lex
 
 class NodeStr(Node):
     def __init__(self, str_):
-        self.value = str
+        self.value = str_.lex
 
 class NodeBool(Node):
     def __init__(self, bool_):
-        self.value = bool_
+        self.value = bool(bool_.lex)
 
 class NodeList_Expression(Node):
     def __init__(self, list_):
@@ -132,7 +132,7 @@ class NodeVectorL(NodeList_Expression):
     pass
 
 class NodeLetExpression(Node):
-    def __init__(assignment_list, expression):
+    def __init__(self, assignment_list, expression):
         self. assignment_list = assignment_list
         self.expression = expression
 

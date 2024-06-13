@@ -1,5 +1,5 @@
 import copy
-from regex import R
+#from regex import *
 
 class Nfa:
     def __init__(self, q_0 = 0, q_f = 1, states = 2, transitions = {}, **args):
@@ -47,7 +47,6 @@ def Or_(aut1, aut2):
     return aux
 
 def Sum(aut1, aut2):
-
     aux = copy.deepcopy(aut1)
     aux.q_f = aut1.states + aut2.q_f
     aux.states = aux.states + aut2.states
@@ -74,7 +73,7 @@ def Sum(aut1, aut2):
                 aux.transitions[i + aut1.states][j] = c
     return aux
 
-def incognit(aut1):
+def incognit(aut1):##############opt
     aux = copy.deepcopy(aut1)
 
     if aut1.q_0 in aux.transitions:
@@ -88,7 +87,7 @@ def incognit(aut1):
 
     return aux
 
-def Kleen_star(aut1):
+def Kleen_star(aut1):################star
     aux = copy.deepcopy(aut1)
 
     if aux.q_f in aux.transitions:
@@ -99,7 +98,7 @@ def Kleen_star(aut1):
     else:
         aux.transitions[aut1.q_f] = {}
         aux.transitions[aut1.q_f][''] = [aux.q_0]
-
+    return aux
 def epsilon_closure(aut1, states):
 
     aux = copy.deepcopy(states)
@@ -157,8 +156,11 @@ def to_deterministic(aut1):
 
 def range_(aut1, aut2):
     aux = Nfa()
-    a = list(aut1.transitions.keys())[0]
-    z = list(aut2.transitions.keys())[0]
+
+    a = list(aut1.transitions[0].keys())[0]
+    z = list(aut2.transitions[0].keys())[0]
+    #print(aut1.transitions)
+    #print(aut2.transitions)
     character = [chr(i) for i in range(ord(a), ord(z) + 1)]
     aux.transitions[aux.q_0] = {}
     for s in character:
@@ -175,25 +177,28 @@ def character(ch):
     new = Nfa()
     new.transitions[new.q_0] = {}
     new.transitions[new.q_0][ch] = [new.q_f]
+    #print(new.transitions)
     return new
 
 def build_lexer(aut1):
     states, transitions, final_states = to_deterministic(aut1)
-
     def check(code):
         c = 0 
         read = 0
         for i in range(len(code)):
-            if code[i] in transitions[c][code[1]]:
-                c = transitions[c][code[i]]
-                read = i
+            if c in transitions:
+                if code[i] in transitions[c]:
+                    c = transitions[c][code[i]]
+                    read = i
+                else:
+                    break
             else:
                 break
 
         return c in final_states, read
     return check
-e = character('a')
+
+
 a = Nfa(0, 5, 6, {0 : {'a': [1, 3], 'b': [3, 4], '': [1]}, 1 : {'a': [2], '': [2, 5]}, 2:{'b': [3,2]}})
 
-character = [chr(i) for i in range(ord('a'), ord('z') + 1)]
-print(character)
+#character = [chr(i) for i in range(ord('a'), ord('z') + 1)]

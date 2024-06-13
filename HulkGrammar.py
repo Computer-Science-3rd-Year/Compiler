@@ -6,7 +6,7 @@ Program = G.NonTerminal('Program', True)
 
 Stat_list, Expression, Stat, def_func, def_type, def_protocol, arg_list, TypeA, FuncBlock, IdT, BlockExpression, IdA, Inher, TypeBlock, BaseType, CallExpression, atrib_list, asig, Ext, rule_list, BoolExpression, Predicate, ArithExpr, TypeTestExpr,  Termino, UnarySub, Factor, PrimitiveExpression, VectorLiteral, Acces, LetExpression, DestAsig, CondExpr, WhileExpr, ForExpr, DownExpr, TypeInst, expr_list, asig_list, OptionalCondition, Iterator, arg, File, TopLevel, Prototype, Members, ProtocolBlock, StructuredExpression, BasicExpression, S= G.NonTerminals('Stat_list Expression Stat def_func def_type def_protocol arg_list TypeA FuncBlock IdT BlockExpression IdA Inher TypeBlock BaseType CallExpression atrib_list asig Ext rule_list BoolExpression Predicate ArithExpr TypeTestExpr Termino UnarySub Factor PrimitiveExpression VectorLiteral Acces LetExpression DestAsig CondExpr WhileExpr ForExpr DownExpr TypeInst expr_list asig_list OptionalCondition Iterator arg File TopLevel Prototype Members ProtocolBlock StructuredExpression BasicExpression S')
 
-function, Id, flecha, punto_c, type_, inherits, llave_a, llave_c, opar, cpar, protocol, extends, and_, or_, not_, menor, menor_e, mayor, mayor_e, equal, distinto, plus, minus, arroba, arroba_d, star, div, resto, pow_, num, str_, bool_, coma, let, in_ , asignar, asignar_d, if_, elif_, else_, while_, for_, is_, as_, dos_p, new_ , colchete_a, colchete_c, doble_or, punto = G.Terminals('function Id => ; type inherits { } ( ) protocol extends & | ! < <= > >= == != + - @ @@ * / % ^ num str bool , let in = := if elif else while for is as : new_ [ ] || .')
+function, Id, flecha, punto_c, type_, inherits, llave_a, llave_c, opar, cpar, protocol, extends, and_, or_, not_, menor, menor_e, mayor, mayor_e, equal, distinto, plus, minus, arroba, arroba_d, star, div, resto, pow_, num, str_, bool_, coma, let, in_ , asignar, asignar_d, if_, elif_, else_, while_, for_, is_, as_, dos_p, new_ , colchete_a, colchete_c, doble_or, punto = G.Terminals('function Id => ; type inherits { } ( ) protocol extends & | ! < <= > >= == != + - @ @@ * / % ^ num str bool , let in = := if elif else while for is as : new [ ] || .')
 
 S %= Program, lambda s: s[1], None 
 Program %= Stat_list + Expression + punto_c, lambda s: NodeProgram(s[1], s[2]), None, None, None
@@ -127,7 +127,7 @@ expr_list %= G.Epsilon, lambda s: []
 
 LetExpression %= let + asig_list + in_ + Expression, lambda s: NodeLetExpression(s[2], s[4]), None, None, None, None
 asig_list %= asig_list + IdT + asignar + Expression + coma, lambda s: [*s[1], NodeDestAssigment(s[2], s[4])], None, None, None, None, None
-asig_list %= IdT + asignar + Expression, lambda s: DestAsig(s[1], s[3]), None, None, None
+asig_list %= IdT + asignar + Expression, lambda s: NodeDestAssigment(s[1], s[3]), None, None, None
 
 DestAsig %= Acces + asignar_d + Expression, lambda s: NodeDestAssigment(s[1], s[3]), None, None, None
 
