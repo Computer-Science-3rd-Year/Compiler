@@ -1,6 +1,7 @@
 from Grammar import *
 import copy
 from HulkGrammar import *
+import sys
 # Computes First(alpha), given First(Vt) and First(Vn) 
 # alpha in (Vt U Vn)*
 def compute_local_first(firsts, alpha):
@@ -237,11 +238,11 @@ def slr_parser(G, funcion):
         T = []
         while True:
             try:
-                #print(s[-1], tokens[c])
+                #print(len(action[(s[-1], funcion(tokens[c]))]))
                 k = action[(s[-1], funcion(tokens[c]))][0]
             except:
-                raise SyntaxError('No esta bien el codigo pasado')
-            
+                print(f"Syntax error at line {tokens[c].line}, column {tokens[c].column}")
+                sys.exit()
             if not k:
                 return r[0]
             if k > 0:
@@ -255,10 +256,6 @@ def slr_parser(G, funcion):
 
                 s_len = len(s) - len(right)
                 s[s_len:] = []
-               # print(r)
-               # for i in r:
-                #    if type(i) != Terminal and type(i) != int:
-                #        print(i.transitions)
                 args = copy.deepcopy(r[s_len - 1:])
                 r[s_len - 1:] = []
                 args.insert(0,0)
@@ -269,8 +266,8 @@ def slr_parser(G, funcion):
     return parser
 def negativos(array):
     return any(elemento < 0 for elemento in array)
-#parse = slr_parser(G, lambda x: x.type_)
+parse = slr_parser(G, lambda x: x)
 #derivation = parse([type_, Id, llave_a, Id, asignar, num, punto_c, llave_c, let, Id, asignar, num, in_, num,plus, num, punto_c, G.EOF])
-#derivation = parse([type_, Id, opar, Id, cpar, llave_a, Id, asignar, num, punto_c, llave_c, num,punto_c, G.EOF])
+#derivation = parse([llave_a, num, punto_c, num, punto_c, llave_c,punto_c, G.EOF])
 #print(derivation)
 

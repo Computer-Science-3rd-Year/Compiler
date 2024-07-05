@@ -159,8 +159,7 @@ def range_(aut1, aut2):
 
     a = list(aut1.transitions[0].keys())[0]
     z = list(aut2.transitions[0].keys())[0]
-    #print(aut1.transitions)
-    #print(aut2.transitions)
+
     character = [chr(i) for i in range(ord(a), ord(z) + 1)]
     aux.transitions[aux.q_0] = {}
     for s in character:
@@ -177,7 +176,6 @@ def character(ch):
     new = Nfa()
     new.transitions[new.q_0] = {}
     new.transitions[new.q_0][ch] = [new.q_f]
-    #print(new.transitions)
     return new
 
 def build_lexer(aut1):

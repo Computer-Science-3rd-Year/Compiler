@@ -1,6 +1,7 @@
 from regex import *
 from HulkGrammar import *
 from Parser import *
+import sys
 class Token:
 
     def __init__(self, line, column, type_, lex):
@@ -33,6 +34,7 @@ Terminal_symb = {
     '/': div,
     '%': resto,
     '^': pow_,
+    '**': pow_,
     ',': coma,
     '=': asignar,
     ':=': asignar_d,
@@ -63,7 +65,7 @@ Terminal_res = {
     'False': bool_
 }
 
-symbols = regex([escape,or_1, or_1, escape, por,or_1, escape, mas,or_1, escape, colchete_a1, or_1, escape, colchete_c1, or_1, escape, opar1, or_1, escape, cpar1, or_1, escape, menos1, or_1, g_bajo, or_1, punto1, or_1, punto_c1, or_1, llave_a1, or_1, llave_c1, or_1, coma1, or_1, igual1, or_1, div1, or_1, porcentaje,or_1, pow1, or_1, dos_p1, or_1, arroba1, or_1, and1, or_1, not_1, or_1, escape,or_1, escape,or_1, or_1,mayor1,or_1, menor1 , or_1, igual1, igual1, or_1, menor1, igual1, or_1, mayor1, igual1, or_1, igual1, igual1, or_1, not_1, igual1,or_1, igual1, mayor1, or_1, dos_p1, igual1, or_1, arroba1, arroba1,R.EOF])
+symbols = regex([escape,or_1, or_1, escape, por,or_1, escape, mas,or_1, escape, colchete_a1, or_1, escape, colchete_c1, or_1, escape, opar1, or_1, escape, cpar1, or_1, escape, menos1, or_1, punto1, or_1, punto_c1, or_1, llave_a1, or_1, llave_c1, or_1, coma1, or_1, igual1, or_1, div1, or_1, porcentaje,or_1, pow1, or_1, dos_p1, or_1, arroba1, or_1, and1, or_1, not_1, or_1, escape,or_1, escape,or_1, or_1,mayor1,or_1, menor1 , or_1, igual1, igual1, or_1, menor1, igual1, or_1, mayor1, igual1, or_1, igual1, igual1, or_1, not_1, igual1,or_1, igual1, mayor1, or_1, dos_p1, igual1, or_1, arroba1, arroba1,or_1, escape, por, escape, por,R.EOF])
 
 '0.[0-9]+|[1-9][0-9]*|[1-9][0-9]*.[0-9]+|0'
 numbers = regex([cero,punto1, colchete_a1, cero, guion, nueve, colchete_c1,mas,or_1, colchete_a1, uno, guion, nueve, colchete_c1, colchete_a1, cero, guion, nueve, colchete_c1, por, or_1, colchete_a1, uno, guion, nueve, colchete_c1, colchete_a1, cero, guion, nueve, colchete_c1, por, punto1, colchete_a1, cero, guion, nueve, colchete_c1, mas,or_1, cero,R.EOF])
@@ -136,23 +138,24 @@ def tokenizer(input):
 
             continue
 
-        #if input[0] == '#':
-        #    while input[0] != '\n':
-        #        column += 1
-        #        input = input[1:]
 
-        #    continue
-
-        raise SyntaxError(f'Invalid syntax at {line}:{column}')
+        print(f'Invalid syntax at line: {line}, column: {column}')
+        sys.exit()
     tokens.append(Token(line, column, G.EOF, G.EOF))
     return tokens
 
 d = tokenizer('''
-    {
-    let squares = [x^2 || x in range(1, 10)] in print(x);
-    7 + 4;
-    };
+    type abc  inherits point{
+    x = a;
+    }
+    type point{
+    y = 7;
+    }
+    let a = [x ^ 2 || x in range(1, 10)] in print(x);
 ''')
-parse = slr_parser(G, lambda x: x.type_)
-derivation = parse(d)
-print(derivation.expression)
+
+#from Check_AST import *
+#parse = slr_parser(G, lambda x: x.type_)
+#derivation = parse(d)
+##print(derivation.stat_list[0].id_.lex)
+#derivation.check(default_runtime)
