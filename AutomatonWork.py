@@ -180,6 +180,7 @@ def character(ch):
 
 def build_lexer(aut1):
     states, transitions, final_states = to_deterministic(aut1)
+    # change 'states' for '_'
     def check(code):
         c = 0 
         read = 0

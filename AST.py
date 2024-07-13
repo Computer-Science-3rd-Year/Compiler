@@ -12,7 +12,7 @@ class NodeProgram(Node):
 
 class NodeFunction(Node):
     def __init__(self, id_, arguments, type_, funcblock):
-        self.id_ = id_.lex
+        self.id_ = id_.lex + 'f'
         self.arguments = arguments
         self.type_ = type_
         self.funcblock = funcblock
@@ -52,6 +52,7 @@ class NodeBynary_Op(Node):
         self.left = left
         self.right = right
         self.token = token
+        self.ret = None
 
 class NodePlus(NodeBynary_Op):
     pass
@@ -68,7 +69,7 @@ class NodeDiv(NodeBynary_Op):
 class NodeResto(NodeBynary_Op):
     pass
 
-class NodePow(NodeBynary_Op):
+class NodePow(NodeBynary_Op): 
     pass
 
 class NodeAnd(NodeBynary_Op):
@@ -116,6 +117,7 @@ class NodeAcces(Node):
         self.id_ = id_.lex
         self.previous = previous
         self.token = id_
+        self.ret = None
 
 class NodeNum(Node):
     def __init__(self, num):
@@ -124,7 +126,7 @@ class NodeNum(Node):
 class NodeStr(Node):
     def __init__(self, str_):
         self.value = str_.lex
-
+        self.ret = 'char*'
 class NodeBool(Node):
     def __init__(self, bool_):
         self.value = bool(bool_.lex)
@@ -133,6 +135,7 @@ class NodeList_Expression(Node):
     def __init__(self, list_):
         self.list_ = list_
         self.ret = None
+        self.len_ = None
 class NodeBlockExpression(NodeList_Expression):
     pass
 
@@ -148,6 +151,7 @@ class NodeDestAssigment(Node):
     def __init__(self, IdT, expression):
         self.IdT = IdT
         self.expression = expression
+        self.ret = None
 
 class NodeCondition(Node):
     def __init__(self, expression, do_, else_, token = None):
@@ -187,7 +191,10 @@ class NodeTypeInst(Node):
 class NodeCallExpression(Node):
     def __init__(self, IdT, arguments):
         self.IdT = IdT
+        if self.IdT.id_ != 'sin' and self.IdT.id_ != 'print' and self.IdT.id_ != 'cos' and self.IdT.id_ != 'sqrt' and self.IdT.id_ != 'base' and self.IdT.id_ != 'log' and self.IdT.id_ != 'rand' and self.IdT.id_ != '__len__':
+            self.IdT.id_ = self.IdT.id_ + 'f'
         self.arguments = arguments
+        self.ret = None
 
 class NodeTypeTestExpr(Node):
     def __init__(self, expression, type_):

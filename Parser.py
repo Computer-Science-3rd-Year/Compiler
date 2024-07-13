@@ -183,7 +183,7 @@ def slr_parser_table(G):
                 except ValueError:
                     k = len(canonical)
                     canonical.append(closure)
-                    #print(closure, d)
+                
                 if (c,d) in action:
                     action[(c,d)].append(k)
                 else:
@@ -229,8 +229,7 @@ def slr_parser_table(G):
 def slr_parser(G, funcion):
 
     goto, action = slr_parser_table(G)
-    #for item in action:
-    #    print(item, action[item])
+
     def parser(tokens):
         c = 0
         s = [1]

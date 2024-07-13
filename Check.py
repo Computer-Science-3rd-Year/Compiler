@@ -30,7 +30,7 @@ tipos = {
     type(4.5): 'double*',
     type(4): 'double*',
     type("cadena"): 'char*',
-    type(None): 'void',
+    type(None): 'void*',
     type(True): 'double*',
     'Number': 'double*',
     'String': 'double*',
@@ -39,7 +39,8 @@ tipos = {
 }
 valores ={
     'Number': 4.0,
-    'String': 'cadena'
+    'String': 'cadena',
+    'char*': 'cadena'
 }
 #errors = []
 compiler = False
@@ -65,7 +66,8 @@ class Function:
         for argument in self.arguments:
             ids.append(argument.check(self.ejecute))
         if len(ids) != len(args):
-            raise Exception(f'Cantidad de argumentos invalida en la funcion: \'{self.id_}\', esperada: \'{len(ids)}\', pasada: \'{len(args)}\'')
+            errors.append(f'Cantidad de argumentos invalida en la funcion: \'{self.id_}\', esperada: \'{len(ids)}\', pasada: \'{len(args)}\'')
+            #raise Exception(f'Cantidad de argumentos invalida en la funcion: \'{self.id_}\', esperada: \'{len(ids)}\', pasada: \'{len(args)}\'')
         for i in range(0, len(args)):
             self.ejecute.context[ids[i]] = args[i]
 
@@ -179,7 +181,11 @@ class Type:
     
             for i in range(len(self.IdA.arguments)):
                 if self.IdA.arguments[i].type_ != None:
-                    self.ejecute.context[ids[i]] = valores[self.IdA.arguments[i].type_.lex]
+                    #print(self.IdA.arguments[i].type_,print(self.IdA.id_))
+                    try:
+                        self.ejecute.context[ids[i]] = valores[self.IdA.arguments[i].type_.lex]
+                    except:
+                        self.ejecute.context[ids[i]] = valores[self.IdA.arguments[i].type_]
                 else:
                     self.ejecute.context[ids[i]] = 'dinamic'
             self.ejecute.context = Context(father = self.ejecute.context)
@@ -191,10 +197,12 @@ class Type:
             self.ejecute.context = Context(father = basetype.attrs)
             self.ejecute.context.check_key('#super', basetype)
         inst = Objectbase(self.ejecute.context, self)
+
         self.ejecute.context.check_key('self', inst)
         for atrib in self.typeblock:
             atrib.check(self.ejecute)
             if isinstance(atrib, NodeFunction):
+                #print(atrib.id_, self.ejecute.context[atrib.id_])
                 aux = self.ejecute.context[atrib.id_].rev()
                 if isinstance(aux, Objectbase):
                     atrib.type_ = tipos[aux.type_.type_id]
@@ -225,7 +233,9 @@ class Type:
         return self.__subclasscheck__(instance.type_)
 
     def __subclasscheck__(self, subclass):
-        return subclass is self or self.__subclasscheck__(subclass.supertype)
+        if subclass.supertype:
+            return subclass is self or self.__subclasscheck__(subclass.supertype)
+        return subclass is self
 
 class Protocol:
     def __init__(self, ejecute, rule_list, supertype):
@@ -235,16 +245,20 @@ class Protocol:
 
     def __instancecheck__(self, inst):
         for name, return_type, param_types in self.rule_list:
+            name = name + 'f'
+
             if name not in inst.attrs.general:
                 return False
             m = inst.attrs[name]
+
             if not isinstance(m, Function):
                 return False
             res = self.ejecute.context[return_type.lex] if return_type else object
             met_res_type = self.ejecute.context[m.type_] if m.type_ \
                 else object
-            if not issubclass(met_res_type, res):
-                return False
+            
+            #if not issubclass(met_res_type, res):
+            #    return False
 
             if len(param_types) != len(m.arguments):
                 return False
@@ -267,6 +281,7 @@ class Objectbase:
     def __init__(self, attrs, type_):
         self.attrs = attrs
         self.type_ = type_
+        self.ret = None
 
     def __getitem__(self, item):
         return self.attrs['__getitem__'](item)
@@ -280,6 +295,7 @@ class Ejecute:
     def __init__(self, context):
         self.context = context
         self.bandera = False
+        self.rt = 0
     def _NodeProgram(self, node: NodeProgram):
         change = True
         mask = []
@@ -345,7 +361,7 @@ class Ejecute:
         return aux
     
     def _NodeFunction(self, node: NodeFunction):
-        id_ = node.id_
+        id_ = node.id_ 
         arguments = node.arguments
         self.context.check_key(id_, Function(id_, node.type_, arguments, node.funcblock, self))
 
@@ -356,6 +372,7 @@ class Ejecute:
         type_ = Type(self, node.IdA, node.inher, node.typeblock)
         self.context.check_key(type_.type_id, type_)
         valores[type_.type_id] = type_
+        tipos[type_.type_id] = type_
     
     def _NodeProtocol(self, node: NodeProtocol):
         rules = []
@@ -378,7 +395,16 @@ class Ejecute:
         return node.value
     
     def _NodeVectorL(self, node: NodeVectorL):
-        return self.context['Vector']([elem.check(self) for elem in node.list_])
+        a = [elem.check(self) for elem in node.list_]
+        if isinstance(a[0], Objectbase):
+            node.ret = a[0].type_ + '*'
+        else:
+            node.ret = tipos[type(a[0])] + '*'
+        node.len_ = len(node.list_)
+        b = self.context['Vector']([elem.check(self) for elem in node.list_])
+        b.ret = node.ret
+
+        return b
 
     def _NodePlus(self, node: NodePlus):
         #print(self.context.general)
@@ -401,8 +427,8 @@ class Ejecute:
         if (type(left) != float and type(left) != int) or (type(right) != float and type(right) != int) :
             if type(left) == Error or type(right) == Error:
                 return Error() 
-            if f"La suma solo esta definida para los numeros, error at line: {node.token.line}, column {node.token.column}" not in errors:
-                errors.append(f"La suma solo esta definida para los numeros, error at line: {node.token.line}, column {node.token.column}")
+            #if f"La suma solo esta definida para los numeros, error at line: {node.token.line}, column {node.token.column}" not in errors:
+            errors.append(f"La suma solo esta definida para los numeros, error at line: {node.token.line}, column {node.token.column}")
             compiler = True
             return Error()
         return float(left) + float(right)
@@ -473,6 +499,7 @@ class Ejecute:
             errors.append(f"No se puede concatenar, error at line: {node.token.line}, column {node.token.column}, Md no es casteable a str")
             compiler = True
             return Error()
+        node.ret = 'char*'
         return str(a) + ' ' + str(b)
     
     def _NodeStar(self, node: NodeStar):
@@ -499,7 +526,7 @@ class Ejecute:
             errors.append(f"La multiplicación solo esta definida para los numeros, error at line: {node.token.line}, column {node.token.column}")
             compiler = True
             return Error()
-
+        
         return float(left) * float(right)
 
     def _NodeDiv(self, node: NodeDiv):
@@ -551,6 +578,7 @@ class Ejecute:
             errors.append(f"El resto solo esta definido para los numeros, error at line: {node.token.line}, column {node.token.column}")
             compiler = True
             return Error()
+        #print(left, right)
         return float(left) % float(right)
     
     def _NodePow(self, node: NodePow):
@@ -848,35 +876,47 @@ class Ejecute:
     def _NodeWhile(self, node: NodeWhile):
         expression = node.expression.check(self)
         aux = 0
+
         while expression:
             if type(expression) != type(True) and type(expression) != type(1.0) and type(expression) != type(4):
                 if type(expression) == Error:
                     return Error()
                 errors.append(f"La expresion del while debe evaluar a bool, error at line: {node.token.line}, column {node.token.column}")
                 compiler = True
-                return Error()    
-            if node.ret == None and type(node.block.check(self)) in tipos:
-                node.ret = tipos[type(node.block.check(self))]
-            aux = node.block.check(self)
+                return Error()
+            block = node.block.check(self)
+            if node.ret == None and type(block) in tipos:
+                node.ret = tipos[type(block)]
+            aux = block
             expression = node.expression.check(self)
+            #print(self.context.general)
         return aux
     def _NodeCondition(self, node: NodeCondition):
         
         a = node.expression.check(self)
         b = node.do_.check(self)
-        c = node.else_.check(self)
+        #c = node.else_.check(self)
         if type(a) != type(True) and type(a) != type(1.0) and type(a) != type(4):
                 if type(a) == Error:
                     return Error()
                 errors.append(f"La expresion de una condicional debe evaluar a bool, error at line: {node.token.line}, column {node.token.column}")
             
-        if type(a) == Error or type(b) == Error or type(c) == Error:
+        if type(a) == Error or type(b) == Error:
             return Error()
         if a:
-            node.ret = tipos[type(b)]
+            try:
+                node.ret = tipos[type(b)]
+            except:
+                4
             return b
         else:
-            node.ret = tipos[type(c)]
+            c = node.else_.check(self)
+            if type(c) == Error:
+                return Error()
+            try:
+                node.ret = tipos[type(c)]
+            except:
+                4
             return c
     
     def _NodeBlockExpression(self, node: NodeBlockExpression):
@@ -892,14 +932,19 @@ class Ejecute:
 
         for assig in node.assignment_list:
             self.context = Context(father = self.context)
-            assig.check(self)
+            a = assig.check(self)
+            if a != 1:
+                return Error()
         
         aux = node.expression.check(self)
         self.context = scope
         if type(aux) == Error:
             return Error()
         if node.ret == None:
-            node.ret = tipos[type(aux)]
+            if isinstance(aux, Objectbase) and isinstance(aux.type_, Type) and aux.type_.type_id == 'Vector':
+                node.ret = node.expression.ret
+            else:
+                node.ret = tipos[type(aux)]
         
         return aux
     
@@ -908,8 +953,9 @@ class Ejecute:
     
     def _NodeFor(self, node: NodeFor):
         name, iterator = node.iterator.check(self)
+        
         IdT = f'#iter{id(node)}'
-
+        
         cond = NodeCallExpression(NodeAcces(Token(-1, -1, str, 'next'),
                                            NodeAcces(Token(-1, -1, str, IdT), None)), [])
 
@@ -923,6 +969,9 @@ class Ejecute:
         self.context = Context(father=self.context)
         self.context.check_key(IdT, iterator)
         
+        if self.bandera:
+            self.context = self.context.father
+            return 4
         while cond.check(self):
             aux = block.check(self)
             if type(aux) == Error:
@@ -957,12 +1006,31 @@ class Ejecute:
         
         key = node.IdT.check(self)
         value = node.expression.check(self)
+    
+        if node.IdT.type_ != None and isinstance(node.expression, NodeTypeInst):
+            if not isinstance(value, self.context[node.IdT.type_.lex]):
+                errors.append('los tipos no son compatibles')
+                return Error()
+        #        if not isinstance(self.context[node.IdT.type_.lex], Protocol):
+        #            #print(node.IdT.type_.lex, node.expression.type_.lex)
+        #            node.expression.type_ = Token(-1,-1,str,node.IdT.type_.lex)
+        #            value = node.expression.check(self)
+        
         if node.IdT.type_ != None:
             if type(node.IdT.type_) != str:
-                node.IdT.type_ = tipos[node.IdT.type_.lex]
+                try:
+                    node.IdT.type_ = tipos[node.IdT.type_.lex]
+                except:
+                    4
         else:
             if isinstance(value, Objectbase):
-                node.IdT.type_ = tipos[str(value.type_.type_id)]
+                if str(value.type_.type_id) == 'Vector':
+                    try:
+                        node.IdT.type_ = 'Vector' + node.expression.ret[:-2]
+                    except:
+                        4
+                else:
+                    node.IdT.type_ = tipos[str(value.type_.type_id)]
             else:
                 try:
                     node.IdT.type_ = tipos[type(value)]
@@ -970,6 +1038,7 @@ class Ejecute:
                     4
         node.ret = node.IdT.type_
         self.context.check_key(key, value)
+        return 1
     def _NodeIdT(self, node: NodeIdT):
         return node.id_
     
@@ -978,29 +1047,55 @@ class Ejecute:
             if type(self.context[node.id_]) == type(Error()):
                 errors[-1] = f"Invalid Key: {node.id_} at line : {node.token.line}, column {node.token.column}"
                 return Error()
+            if isinstance(self.context[node.id_], Objectbase):
+                if isinstance(self.context[node.id_].type_, Type) and self.context[node.id_].type_.type_id == 'Vector':
+                    try:
+                        node.ret = 'Vector' + self.context[node.id_].ret[:-1]
+                    except:
+                        node.ret = self.context[node.id_].type_
+                else:
+                    node.ret = self.context[node.id_].type_
+            elif isinstance(self.context[node.id_], Function):
+                node.ret = self.context[node.id_].type_
+            else:
+                if node.id_ == 'print':
+                    node.ret = 'char*'
+                else:
+                    if node.id_ in ['sqrt', 'sin', 'cos', 'tan']:
+                        node.ret = 'double*'
+                    else:
+                        try:
+                            node.ret = tipos[type(self.context[node.id_])]
+                        except:
+                            4
+            #print(self.context[node.id_], node.id_)
             return self.context[node.id_]
 
         previous = node.previous.check(self)
         if isinstance(previous, Objectbase):
+            
+            node.ret = previous.type_
             return previous.attrs[node.id_]
-        return getattr(previous, node.id_)
+        try:
+            node.ret = tipos[type(getattr(previous, node.id_))]
+        except:
+            4
+        #print(previous, node.id_)
+        try:
+            return getattr(previous, node.id_)
+        except:
+            Error()
     
     def _NodeIndex(self, node: NodeIndex):
         i = int(node.expression.check(self))
         a = node.IdT.check(self)
         return a[i]
-
+    
     def _NodeCallExpression(self, node: NodeCallExpression):
+        
         call = node.IdT.check(self)
         t = []
 
-        #if isinstance(node.left, NodeAcces) and self.context[node.left.id_] == 'dinamic':
-        #    d = self.context
-        #    while d:
-        #        if node.left.id_ in d.general:
-        #            d.general[node.left.id_] = 4.0
-        #            break
-        #        d = d.father
         for i, arg in enumerate(node.arguments):
             z = arg.check(self)
             t.append(z)
@@ -1018,14 +1113,20 @@ class Ejecute:
                     d = d.father
             if type(t[-1]) == Error:
                 return Error()
+
         if self.bandera:
             if hasattr(call, 'id_'):
                 if self.context.rev(call.id_ + '#@') == 'None':
                     if call.type_ == 'Number':
+                        node.ret = tipos[type(4.0)]
                         return 4.0
                     if call.type_ == 'String':
+                        node.ret = tipos[type('sfr')]
                         return 'concat'
-                    #print(call.id_)
+                    if node.IdT.id_ == 'range':
+                        return call(*[int(arg.check(self)) for arg in node.arguments])
+                         
+                    node.ret = tipos[type(4.0)]
                     return 4
             if hasattr(call, 'id_'):
                 self.context[call.id_ + '#@'] = 4
@@ -1033,12 +1134,22 @@ class Ejecute:
                 return call(*[int(arg.check(self)) for arg in node.arguments])
             if node.IdT.id_ == 'print':
                 return None
-            if node.IdT.id_ == 'sin' or node.IdT.id_ == 'cos' or node.IdT.id_ == 'sqrt':
+            if node.IdT.id_ == 'sin' or node.IdT.id_ == 'cos' or node.IdT.id_ == 'sqrt' and node.IdT.id_ != 'base':
+                node.ret = tipos[type(4.0)]
                 return 4
+        try:
+            d = call(*t)
+        except:
+            return Error()
         
-        return call(*t)
+        try:
+            node.ret = tipos[type(d)]
+        except:
+            node.ret = tipos[d.type_.type_id]
+        return d
 
     def _NodeTypeInst(self, node: NodeTypeInst):
+        #print(self.context.father.general)
         type_ = self.context[node.type_.lex]
         t = []
         for arg in node.arguments:
@@ -1051,19 +1162,31 @@ class Ejecute:
     def _NodeDestAssigment(self, node: NodeDestAssigment):
         IdT = node.IdT
         value = node.expression.check(self)
-
+        #print(node.expression)
         if isinstance(IdT, NodeIndex):
             i = IdT.expression.check(self)
             vec = IdT.IdT.check(self)
             vec[i] = value
         elif not IdT.previous:
-            self.context[IdT.id_] = value
+            d = self.context
+            while d:
+                if IdT.id_ in d.general:
+                    d.general[IdT.id_] = value
+                    break
+                d = d.father
+            #self.context[IdT.id_] = value
         else:
             prev = IdT.previous.check(self)
             if isinstance(prev, Objectbase):
-                prev.attrs[IdT.id_] = value
+                if value != 'dinamic':
+                    prev.attrs[IdT.id_] = value
+                else:
+                    value = prev.attrs[IdT.id_]
+                    if isinstance(node.expression, NodeAcces):
+                        self.context[node.expression.id_] = value
             else:
                 setattr(prev, IdT.id_, value)
+
         node.ret = tipos[type(value)]
         return value
     
@@ -1071,6 +1194,7 @@ class Ejecute:
         return node.expression.check(self)
     
     def _NodeTypeTestExpr(self, node: NodeTypeTestExpr):
+        #print(node.expression.check(self), self.context[node.type_.lex])
         return isinstance(node.expression.check(self), self.context[node.type_.lex])
 
 default_runtime = Ejecute(global_scope)

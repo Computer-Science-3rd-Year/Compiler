@@ -81,7 +81,7 @@ def tokenizer(input):
 
     line = 1
     column = 1
-
+    #input = input.replace("\\", "\\\\")
     while len(input):
 
         while input[0].isspace():

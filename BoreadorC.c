@@ -156,32 +156,36 @@ double* sqrt1(double* x){
     return Num(sqrt(*x));
 }
 
-typedef struct A{
-    double* x;
-    double* y;
-}A;
-A* initA(double* x, double* y){
-A* result = malloc(sizeof(A));
-result->x = Sum(x, Num(1.0));
-result->y = Sum(y, Num(4.0));
+typedef struct Vector{
+ char* toString;
+}Vector;
+Vector* initVector(char* v){
+Vector* result = malloc(sizeof(Vector));
+result->toString = "Vector";
 return result;
 }
-typedef struct B{
-    double* x;
-    double* y;
-    double* z;
-}B;
-B* initB(double* x, double* y, double* z){
-B* result = malloc(sizeof(B));
-*result->x = *Sum(x, Num(1.0));
-*result->y = *Sum(y, Num(4.0));
-*result->z = *Sum(z, Num(4.0));
-return result;
+typedef struct Vectordouble{
+double** v;
+ int index;
+ int size;
+}Vectordouble;
+Vectordouble* initVectordouble(double** vec, int size){
+Vectordouble* result = malloc(sizeof(Vectordouble));
+ result->v = vec;
+result->size = size;
+result->index = -1;
+ return result;
 }
- int main(int argc, char **argv){
-Num(4.0);
-double x = 4;
-double* y = &x;
-initA(y,y);
-printf("el valor es: %lf\n", *initA(y,y)->x);
+
+Vectordouble* initv0(){
+double** result = malloc(sizeof(double*));
+result[0] = Num(1.0);
+result[1] = Num(2.0);
+result[2] = Num(3.0);
+result[3] = Num(4.0);
+return initVectordouble(result, 4);
+}
+int main(int argc, char **argv){
+Vectordouble* a = initv0();
+printf("el valor es: %lf\n", *a->v[3]);
 }
