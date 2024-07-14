@@ -121,19 +121,20 @@ def tokenizer(input):
             input = input[indice:]
 
             continue
-
+        slash_count = 0
         if input[0] == '"':
             indice = 1
 
             while input[indice] != '"':
                 if input[indice] == '\\':
                     indice += 1
+                    slash_count+=1
 
                 indice += 1
             
-            tokens.append(Token(line, column, str_, input[1:indice]))
+            tokens.append(Token(line, column, str_, remove_slashes(input[1:indice])))
 
-            column = column + indice
+            column = column + indice - slash_count
             input = input[indice + 1:]
 
             continue
@@ -143,6 +144,13 @@ def tokenizer(input):
         sys.exit()
     tokens.append(Token(line, column, G.EOF, G.EOF))
     return tokens
+
+def remove_slashes(input):
+    result = ""
+    for i in input:
+        if i != '\\':
+            result+=i
+    return result
 
 d = tokenizer('''
     type abc  inherits point{
